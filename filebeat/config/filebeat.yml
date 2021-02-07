@@ -1,0 +1,81 @@
+
+# ============================== Filebeat inputs ===============================
+
+filebeat.inputs:
+- type: log
+  enabled: true
+  paths:
+    - /var/log/*.log
+    - /var/log/*/*.log
+
+- type: container
+  enabled: true
+  paths: 
+    - /var/lib/docker/containers/*/*.log
+
+
+# ============================== Filebeat modules ==============================
+
+filebeat.config.modules:
+  # Glob pattern for configuration loading
+  path: ${path.config}/modules.d/*.yml
+
+  # Set to true to enable config reloading
+  reload.enabled: false
+
+  # Period on which files under path should be checked for changes
+  #reload.period: 10s
+
+# ======================= Elasticsearch template setting =======================
+
+setup.template.settings:
+  index.number_of_shards: 1
+  #index.codec: best_compression
+  #_source.enabled: false
+
+
+# =================================== Kibana ===================================
+setup.kibana:
+  host: "0.0.0.0:5601"
+
+# ================================== Outputs ===================================
+
+# ---------------------------- Elasticsearch Output ----------------------------
+output.elasticsearch:
+  # Array of hosts to connect to.
+  hosts: ["0.0.0.0:9200"]
+
+  # Protocol - either `http` (default) or `https`.
+  protocol: "http"
+
+  # Authentication credentials - either API key or username/password.
+  #api_key: "id:api_key"
+  #username: "admin"
+  #password: "admin"
+
+- #decode_json_fields:
+  #  fields: ["message"]
+  #  target: "json"
+  #  overwrite_keys: true
+
+  #logging.json: true
+  
+  indices:
+    - index: "filebeat-{+yyyy.MM.dd}"
+
+
+# ================================= Processors =================================
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_cloud_metadata: ~
+  - add_docker_metadata:
+    host: "unix:///var/run/docker.sock"
+  - add_kubernetes_metadata: ~
+
+# ============================= X-Pack Monitoring ==============================
+
+# Set to true to enable the monitoring reporter.
+monitoring.enabled: true
+#xpack.monitoring.elasticsearch.username: "admin"
+#xpack.monitoring.elasticsearch.password: "admin"
